@@ -9,10 +9,14 @@ const UserProvider=({children})=>{
 
     useEffect(()=>{
         pulluser(socket, data=>{
-            setUser({
-                id: data.id,
-                username: data.username,
-            })
+            try {
+                setUser({
+                    id: data.id,
+                    username: data.username,
+                })
+            } catch (error) {
+                console.log(error)
+            }
         });
         pullUsers(socket, users=>{
             setUsers(users);
