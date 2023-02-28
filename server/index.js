@@ -4,11 +4,12 @@ import {Server as SocketServer} from "socket.io";
 import http from "http";
 import cors from "cors";
 import {PORT} from "./config.js";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
 
 
-const app = express(); //express tiene su propio servidor http
-const server=http.createServer(app); //lo hacemos un servidor http compatible
+const app = express();
+const server=http.createServer(app); 
 const io=new SocketServer(server, {
     cors:{
         origin: 'http://127.0.0.1:5173'
@@ -20,24 +21,39 @@ app.use(cors());
 app.use(morgan("dev"));
 const preferences = {};
 const users = [];
+let state={};
 
 io.on('connection', (socket)=>{
-    
+
+    rateLimiter.consume(socket.handshake.address, 2).
+    then((data)=>{
+        socket.emit('news', { data: data });
+        socket.broadcast.emit('news', { data: data });
+        console.log("New client", socket.id);
+        if (preferences[socket.id] === undefined) {
+            preferences[socket.id] = {
+              username: socket.id,
+              id: socket.id
+            };
+        }
+        state=data;
+        console.log(state);
+    }).catch((rejRes)=>{
+        socket.emit('blocked', { retryMs: rejRes.msBeforeNext });
+        console.log(`Rate limit exceeded for socket id ${socket.Id}. Rejected with code ${rejRes}`);
+        socket.disconnect(true)
+    })
     
     //retorna la lista
 
     socket.on('update',()=>{
         socket.emit('update',users);
     });
-
-    console.log("New client", socket.id);
-
-    if (preferences[socket.id] === undefined) {
-        preferences[socket.id] = {
-          username: socket.id,
-          id: socket.id
-        };
-    }
+    
+    socket.on("getState",()=>{
+        socket.emit('getState',state);
+    })
+ 
     
     socket.on('addNameUser', (name)=>{
         const nameUsed=Object.values(preferences).filter((x)=> x.username.includes(name));
@@ -60,7 +76,7 @@ io.on('connection', (socket)=>{
     socket.on('disconected', ()=>{
         preferences[socket.id] = undefined;
         console.log(socket.id, "disconnected")
-        socket.disconnect;
+        socket.disconnect(true);
     })
 
 
@@ -88,19 +104,11 @@ const sendGeneralMessage=(messageObject, socket)=>{
 
 }
 
-    // const sendDestinationMessage=(messageObject, socket)=>{
-    //     console.log(preferences[socket.id].username, messageObject.body,"to ->",preferences[messageObject.to].username);
-            
-    //     io.to(messageObject.to).emit('message', {
-    //         type:messageObject.type,
-    //         body:messageObject.body,
-    //         file:messageObject.file,
-    //         mimeType: messageObject.mimeType,
-    //         filename:messageObject.filename,
-    //         from: preferences[socket.id].username,
-    //     });
-
-    // }
-
 server.listen(PORT);
+
+const rateLimiter= new RateLimiterMemory({
+    points: 10,
+    duration: 60, //60 seconds
+})
+
 console.log("Server stared on port ",PORT);

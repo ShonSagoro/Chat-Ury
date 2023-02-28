@@ -1,5 +1,7 @@
 import { UseChat } from "../context/ChatProvider";
 import { UseUser } from "../context/UserProvider";
+import RenderImage from "./RenderImage";
+
 
 function CardMessages(props) {
   const { user } = UseUser();
@@ -9,10 +11,6 @@ function CardMessages(props) {
     <>
       <ul className=" w-auto overflow-y-auto flex flex-col-reverse h-4/5 my-2">
         {props.messages.map((message, index) => {
-          console.log(
-            (message.to == "general" && conversation.to.id == "general") ||
-              message.from == "me"
-          );
           if (
             (message.to == "general" && conversation.to.id == "general") ||
             message.from == "me"
