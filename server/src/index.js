@@ -11,7 +11,7 @@ const app = express(); //express tiene su propio servidor http
 const server=http.createServer(app); //lo hacemos un servidor http compatible
 const io=new SocketServer(server, {
     cors:{
-        origin: 'http://127.0.0.1:5173'
+        origin: '*'
     }
 });// se lo damos a socket.io
 
@@ -88,19 +88,6 @@ const sendGeneralMessage=(messageObject, socket)=>{
 
 }
 
-    // const sendDestinationMessage=(messageObject, socket)=>{
-    //     console.log(preferences[socket.id].username, messageObject.body,"to ->",preferences[messageObject.to].username);
-            
-    //     io.to(messageObject.to).emit('message', {
-    //         type:messageObject.type,
-    //         body:messageObject.body,
-    //         file:messageObject.file,
-    //         mimeType: messageObject.mimeType,
-    //         filename:messageObject.filename,
-    //         from: preferences[socket.id].username,
-    //     });
 
-    // }
-
-server.listen(PORT);
-console.log("Server stared on port ",PORT);
+    server.listen(PORT);
+    console.log("Server stared on port ",PORT);
